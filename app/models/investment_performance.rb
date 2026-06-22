@@ -3,15 +3,16 @@ class InvestmentPerformance
 
   def initialize(family, period: Period.all_time)
     @family = family
-    @statement = InvestmentStatement.new(family, period: period)
+    @period = period
+    @statement = InvestmentStatement.new(family)
   end
 
   def net_cash_invested
-    statement.totals.net_flow
+    statement.totals(period: @period).net_flow
   end
 
   def reinvested_gains
-    totals = statement.totals
+    totals = statement.totals(period: @period)
     totals.dividends + totals.interest
   end
 
@@ -19,17 +20,19 @@ class InvestmentPerformance
     accounts = statement.investment_accounts
     return nil if accounts.empty?
     
-    entries = Entry.where(account: accounts).where.not(amount: 0)
+    trades = family.trades.joins(:entry).where(entries: { account_id: accounts.map(&:id) })
     
-    cash_flows = entries.map do |entry|
-      # Deposits into the investment account are positive entry amounts.
-      # From the portfolio's perspective, this is money added (out of pocket).
-      # For XIRR, investments (deposits) are negative, returns (withdrawals/final value) are positive.
-      amount_in_family_currency = entry.amount_money.exchange_to(family.currency)
-      { amount: -amount_in_family_currency.amount, date: entry.date }
+    cash_flows = trades.map do |trade|
+      entry = trade.entry
+      # A Buy (qty > 0) has a negative entry amount (spending cash to get securities).
+      # This is money entering the holdings portfolio, so it's a NEGATIVE cash flow for XIRR.
+      # A Sell (qty < 0) has a positive entry amount (receiving cash from securities).
+      # This is money leaving the holdings portfolio, so it's a POSITIVE cash flow for XIRR.
+      amount_in_family_currency = statement.convert_to_family_currency(entry.amount_money, entry.account.currency)
+      { amount: amount_in_family_currency, date: entry.date }
     end
     
-    current_value = statement.portfolio_value_money.amount
+    current_value = statement.holdings_value_money.amount
     return nil if current_value.zero? && cash_flows.empty?
     
     cash_flows << { amount: current_value, date: Date.current }

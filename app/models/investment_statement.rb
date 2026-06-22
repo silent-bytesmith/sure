@@ -186,21 +186,6 @@ class InvestmentStatement
     end
   end
 
-  private
-    # Today's rates for every currency present on the family's investment
-    # accounts and their holdings. Mirrors BalanceSheet::AccountTotals#exchange_rates.
-    def exchange_rates
-      @exchange_rates ||= begin
-        account_currencies = investment_accounts.map(&:currency)
-        holding_currencies = Holding.where(account_id: investment_account_ids).distinct.pluck(:currency)
-        foreign = (account_currencies + holding_currencies)
-                    .compact
-                    .uniq
-                    .reject { |c| c == family.currency }
-        ExchangeRate.rates_for(foreign, to: family.currency, date: Date.current)
-      end
-    end
-
     # Unwrap Money first because this codebase's Money (lib/money.rb) ignores
     # the currency arg of `Money.new` when the payload is already a Money, and
     # `Money * numeric` preserves the source currency — so multiplying a
@@ -214,6 +199,19 @@ class InvestmentStatement
       numeric * rate
     end
 
+  private
+
+    def exchange_rates
+      @exchange_rates ||= begin
+        account_currencies = investment_accounts.map(&:currency)
+        holding_currencies = Holding.where(account_id: investment_account_ids).distinct.pluck(:currency)
+        foreign = (account_currencies + holding_currencies)
+                    .compact
+                    .uniq
+                    .reject { |c| c == family.currency }
+        ExchangeRate.rates_for(foreign, to: family.currency, date: Date.current)
+      end
+    end
     def all_time_totals
       @all_time_totals ||= totals(period: Period.all_time)
     end
