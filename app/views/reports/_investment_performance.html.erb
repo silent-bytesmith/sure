@@ -3,7 +3,32 @@
 <% if investment_metrics[:has_investments] %>
   <div class="space-y-6">
     <%# Investment Summary Cards %>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <%# Cash Invested Card %>
+      <div class="bg-container-inset rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <%= icon("wallet", size: "sm") %>
+          <span class="text-sm text-secondary"><%= t("reports.investment_performance.cash_invested", default: "Net Cash Invested") %></span>
+        </div>
+        <p class="text-xl font-semibold text-primary privacy-sensitive">
+          <%= format_money(investment_metrics[:net_cash_invested]) %>
+        </p>
+      </div>
+
+      <%# IRR Card %>
+      <div class="bg-container-inset rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <%= icon("percent", size: "sm") %>
+          <span class="text-sm text-secondary"><%= t("reports.investment_performance.irr", default: "Personal ROI") %></span>
+        </div>
+        <p class="text-xl font-semibold text-primary privacy-sensitive">
+          <% if investment_metrics[:irr] %>
+            <%= number_to_percentage(investment_metrics[:irr] * 100, precision: 2) %>
+          <% else %>
+            <span class="text-secondary"><%= t("reports.investment_performance.no_data", default: "No Data") %></span>
+          <% end %>
+        </p>
+      </div>
       <%# Portfolio Value Card %>
       <div class="bg-container-inset rounded-lg p-4">
         <div class="flex items-center gap-2 mb-3">

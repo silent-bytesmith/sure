@@ -454,6 +454,7 @@ class ReportsController < ApplicationController
       return { has_investments: false } unless investment_accounts.any?
 
       period_totals = investment_statement.totals(period: @period)
+      perf = InvestmentPerformance.new(Current.family, period: @period)
 
       {
         has_investments: true,
@@ -463,7 +464,10 @@ class ReportsController < ApplicationController
         period_withdrawals: period_totals.withdrawals,
         top_holdings: investment_statement.top_holdings(limit: 5),
         accounts: investment_accounts.to_a,
-        gains_by_tax_treatment: build_gains_by_tax_treatment(investment_statement)
+        gains_by_tax_treatment: build_gains_by_tax_treatment(investment_statement),
+        net_cash_invested: perf.net_cash_invested,
+        irr: perf.irr,
+        reinvested_gains: perf.reinvested_gains
       }
     end
 
